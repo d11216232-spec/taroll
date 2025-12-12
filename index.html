@@ -574,9 +574,15 @@
         }
 
         // ===== UI 更新 =====
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function displayError(message) {
             const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            errorContainer.innerHTML = `<div class="error-message">${escapeHTML(message)}</div>`;
             setTimeout(() => {
                 errorContainer.innerHTML = '';
             }, 5000);
@@ -596,13 +602,13 @@
             const cardsHTML = results.map(card => `
                 <div class="card-item">
                     <div class="card-header">
-                        <div class="card-name">${card.name}</div>
+                        <div class="card-name">${escapeHTML(card.name)}</div>
                         <span class="badge badge-${card.orientation}">
                             ${card.orientation === 'upright' ? '正位' : '逆位'}
                         </span>
                     </div>
-                    ${results.length > 1 ? `<div class="position-label">位置：${card.position_name}</div>` : ''}
-                    <div class="card-meaning">${card.meaning}</div>
+                    ${results.length > 1 ? `<div class="position-label">位置：${escapeHTML(card.position_name)}</div>` : ''}
+                    <div class="card-meaning">${escapeHTML(card.meaning)}</div>
                 </div>
             `).join('');
 
