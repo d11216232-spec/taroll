@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔羅牌 PoC</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .control-panel {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-draw {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-draw:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-clear {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-clear:hover {
+            background: #5a6268;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-board {
+            padding: 30px;
+            min-height: 200px;
+        }
+
+        .results-board.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .card-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .card-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #212529;
+            flex: 1;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-upright {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-reversed {
+            background: #dc3545;
+            color: white;
+        }
+
+        .position-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .card-meaning {
+            color: #495057;
+            line-height: 1.8;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .card-list {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            header {
+                padding: 20px;
+            }
+
+            header h1 {
+                font-size: 1.75rem;
+            }
+
+            .control-panel, .results-board {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>塔羅牌 PoC</h1>
+            <p>基本 UI、隨機抽牌、簡單敘述</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="card-count">抽牌張數</label>
+                <select id="card-count" aria-label="選擇抽牌張數">
+                    <option value="1">1 張</option>
+                    <option value="3">3 張</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="seed-input">Seed（選填，用於重現結果）</label>
+                <input type="text" id="seed-input" placeholder="輸入 seed 字串（例如：abc）" aria-label="Seed 輸入">
+            </div>
+
+            <div class="control-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="use-seed" aria-label="使用 seed">
+                    <label for="use-seed">使用 seed</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-draw" id="draw-btn" aria-label="抽牌">抽牌</button>
+                <button class="btn-clear" id="clear-btn" aria-label="清除結果">清除</button>
+            </div>
+
+            <div id="error-container"></div>
+        </div>
+
+        <div class="results-board empty" id="results-board" aria-live="polite" aria-atomic="true">
+            <p>尚未抽牌，請選擇張數後點擊「抽牌」按鈕</p>
+        </div>
+    </div>
+
+    <script>
+        // ===== 牌庫資料 =====
+        const CARDS = [
+            {
+                id: 0,
+                name: "愚者 (The Fool)",
+                meaning: {
+                    upright: "新的開始、自由、冒險精神。代表一個充滿可能性的新旅程，保持開放的心態迎接未知。",
+                    reversed: "輕率、魯莽、缺乏計畫。可能需要更謹慎地評估風險，避免盲目前進。"
+                }
+            },
+            {
+                id: 1,
+                name: "魔術師 (The Magician)",
+                meaning: {
+                    upright: "力量、技能、創造力。你擁有實現目標所需的一切資源，現在是採取行動的時候。",
+                    reversed: "操縱、詭計、缺乏自信。可能濫用才能或未能充分發揮潛力。"
+                }
+            },
+            {
+                id: 2,
+                name: "女祭司 (The High Priestess)",
+                meaning: {
+                    upright: "直覺、神秘、內在智慧。傾聽內心的聲音，探索潛意識中的知識。",
+                    reversed: "秘密、隱藏的動機、缺乏洞察力。可能忽視了內在的智慧或被表象所迷惑。"
+                }
+            },
+            {
+                id: 3,
+                name: "皇后 (The Empress)",
+                meaning: {
+                    upright: "豐盛、養育、創造力。代表繁榮、成長和母性的關懷，享受生活的美好。",
+                    reversed: "依賴、窒息、創造力受阻。可能過度保護或忽視自我照顧。"
+                }
+            },
+            {
+                id: 4,
+                name: "皇帝 (The Emperor)",
+                meaning: {
+                    upright: "權威、結構、控制。建立秩序和穩定，運用領導力實現目標。",
+                    reversed: "專制、僵化、缺乏紀律。可能過於控制或缺乏必要的結構。"
+                }
+            },
+            {
+                id: 5,
+                name: "教皇 (The Hierophant)",
+                meaning: {
+                    upright: "傳統、精神指導、教育。尋求智慧和指引，遵循既定的價值觀。",
+                    reversed: "叛逆、非傳統、挑戰權威。可能質疑既有的信仰體系。"
+                }
+            },
+            {
+                id: 6,
+                name: "戀人 (The Lovers)",
+                meaning: {
+                    upright: "愛情、和諧、選擇。重要的關係或決定，需要真誠與承諾。",
+                    reversed: "失衡、錯誤的選擇、價值觀衝突。關係中可能存在不和諧。"
+                }
+            },
+            {
+                id: 7,
+                name: "戰車 (The Chariot)",
+                meaning: {
+                    upright: "意志力、決心、勝利。克服障礙，保持專注前進。",
+                    reversed: "失控、缺乏方向、被阻礙。可能失去動力或方向感。"
+                }
+            },
+            {
+                id: 8,
+                name: "力量 (Strength)",
+                meaning: {
+                    upright: "勇氣、耐心、內在力量。以溫柔和堅韌克服挑戰。",
+                    reversed: "自我懷疑、缺乏信心、內在衝突。可能濫用力量或感到軟弱。"
+                }
+            },
+            {
+                id: 9,
+                name: "隱士 (The Hermit)",
+                meaning: {
+                    upright: "內省、孤獨、尋求真理。需要獨處時間來尋找內在的答案。",
+                    reversed: "孤立、孤獨、拒絕幫助。可能過度隔離或害怕面對自己。"
+                }
+            },
+            {
+                id: 10,
+                name: "命運之輪 (Wheel of Fortune)",
+                meaning: {
+                    upright: "變化、循環、命運。生命的起伏，接受改變帶來的機會。",
+                    reversed: "厄運、抗拒改變、失控。可能經歷不利的轉變。"
+                }
+            },
+            {
+                id: 11,
+                name: "正義 (Justice)",
+                meaning: {
+                    upright: "公平、真相、因果。尋求平衡和公正的結果，為行為負責。",
+                    reversed: "不公、偏見、逃避責任。可能面臨不公平的對待或缺乏誠實。"
+                }
+            },
+            {
+                id: 12,
+                name: "倒吊人 (The Hanged Man)",
+                meaning: {
+                    upright: "犧牲、新視角、暫停。從不同角度看問題，接受等待的智慧。",
+                    reversed: "拖延、抗拒、無意義的犧牲。可能陷入停滯或拒絕放手。"
+                }
+            },
+            {
+                id: 13,
+                name: "死神 (Death)",
+                meaning: {
+                    upright: "結束、轉變、重生。舊事物的終結為新開始創造空間。",
+                    reversed: "抗拒改變、停滯、無法放手。可能害怕必要的轉變。"
+                }
+            },
+            {
+                id: 14,
+                name: "節制 (Temperance)",
+                meaning: {
+                    upright: "平衡、調和、耐心。尋找中庸之道，整合對立的元素。",
+                    reversed: "失衡、過度、缺乏和諧。可能走極端或失去自我控制。"
+                }
+            },
+            {
+                id: 15,
+                name: "惡魔 (The Devil)",
+                meaning: {
+                    upright: "束縛、執著、誘惑。意識到自我限制的模式，面對陰影面。",
+                    reversed: "解放、覺醒、打破枷鎖。開始擺脫有害的依賴或習慣。"
+                }
+            },
+            {
+                id: 16,
+                name: "塔 (The Tower)",
+                meaning: {
+                    upright: "突然的改變、動盪、啟示。舊結構的崩潰為重建創造機會。",
+                    reversed: "逃避災難、抗拒改變、延遲的覺醒。可能推遲不可避免的轉變。"
+                }
+            },
+            {
+                id: 17,
+                name: "星星 (The Star)",
+                meaning: {
+                    upright: "希望、靈感、寧靜。恢復信心，相信未來的可能性。",
+                    reversed: "失望、缺乏信心、失去方向。可能感到絕望或失去希望。"
+                }
+            },
+            {
+                id: 18,
+                name: "月亮 (The Moon)",
+                meaning: {
+                    upright: "幻覺、直覺、潛意識。探索深層恐懼和幻想，信任直覺。",
+                    reversed: "釋放恐懼、清晰、真相浮現。開始看清被隱藏的事物。"
+                }
+            },
+            {
+                id: 19,
+                name: "太陽 (The Sun)",
+                meaning: {
+                    upright: "成功、喜悅、活力。享受生命的美好，充滿正能量和樂觀。",
+                    reversed: "暫時的低迷、過度樂觀、延遲的成功。喜悅可能被暫時遮蔽。"
+                }
+            },
+            {
+                id: 20,
+                name: "審判 (Judgement)",
+                meaning: {
+                    upright: "反思、救贖、覺醒。評估過去，做出重要決定，迎接新生。",
+                    reversed: "自我懷疑、缺乏覺察、拒絕反思。可能逃避必要的評估。"
+                }
+            },
+            {
+                id: 21,
+                name: "世界 (The World)",
+                meaning: {
+                    upright: "完成、成就、整合。達到重要里程碑，享受成功的果實。",
+                    reversed: "未完成、缺乏閉合、尋求完美。可能接近完成但尚未達成。"
+                }
+            }
+        ];
+
+        // ===== RNG 實作 =====
+        // cyrb128 hash function
+        function cyrb128(str) {
+            let h1 = 1779033703, h2 = 3144134277,
+                h3 = 1013904242, h4 = 2773480762;
+            for (let i = 0, k; i < str.length; i++) {
+                k = str.charCodeAt(i);
+                h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+                h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+                h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+                h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+            }
+            h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+            h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+            h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+            h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+            return [(h1^h2^h3^h4)>>>0, (h2^h1)>>>0, (h3^h1)>>>0, (h4^h1)>>>0];
+        }
+
+        // mulberry32 PRNG
+        function mulberry32(a) {
+            return function() {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        // 建立 RNG
+        function createRNG(seed) {
+            if (seed !== null && seed !== undefined) {
+                const hash = cyrb128(String(seed));
+                return mulberry32(hash[0]);
+            }
+            return Math.random;
+        }
+
+        // ===== Fisher-Yates 洗牌 =====
+        function fisherYatesShuffle(array, rng) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // ===== 抽牌邏輯 =====
+        function drawCards(count, seed = null) {
+            // 驗證
+            if (count > CARDS.length) {
+                throw new Error(`無法抽取 ${count} 張牌，牌庫僅有 ${CARDS.length} 張。`);
+            }
+
+            const rng = createRNG(seed);
+            
+            // 洗牌
+            const shuffled = fisherYatesShuffle(CARDS, rng);
+            
+            // 取前 N 張
+            const drawn = shuffled.slice(0, count);
+            
+            // 決定位置名稱
+            const positionNames = count === 1 ? ['單張'] : ['過去', '現在', '未來'];
+            
+            // 建立結果
+            return drawn.map((card, index) => {
+                const orientation = rng() < 0.5 ? 'upright' : 'reversed';
+                return {
+                    card_id: card.id,
+                    name: card.name,
+                    position_index: index,
+                    position_name: positionNames[index],
+                    orientation: orientation,
+                    meaning: card.meaning[orientation]
+                };
+            });
+        }
+
+        // ===== UI 更新 =====
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function displayError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error-message">${escapeHTML(message)}</div>`;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function displayResults(results) {
+            const resultsBoard = document.getElementById('results-board');
+            
+            if (results.length === 0) {
+                resultsBoard.className = 'results-board empty';
+                resultsBoard.innerHTML = '<p>尚未抽牌，請選擇張數後點擊「抽牌」按鈕</p>';
+                return;
+            }
+
+            resultsBoard.className = 'results-board';
+            
+            const cardsHTML = results.map(card => `
+                <div class="card-item">
+                    <div class="card-header">
+                        <div class="card-name">${escapeHTML(card.name)}</div>
+                        <span class="badge badge-${card.orientation}">
+                            ${card.orientation === 'upright' ? '正位' : '逆位'}
+                        </span>
+                    </div>
+                    ${results.length > 1 ? `<div class="position-label">位置：${escapeHTML(card.position_name)}</div>` : ''}
+                    <div class="card-meaning">${escapeHTML(card.meaning)}</div>
+                </div>
+            `).join('');
+
+            resultsBoard.innerHTML = `<div class="card-list">${cardsHTML}</div>`;
+        }
+
+        // ===== 事件處理 =====
+        document.getElementById('draw-btn').addEventListener('click', () => {
+            try {
+                const count = parseInt(document.getElementById('card-count').value);
+                const useSeed = document.getElementById('use-seed').checked;
+                const seedInput = document.getElementById('seed-input').value;
+                
+                const seed = useSeed ? seedInput : null;
+                const results = drawCards(count, seed);
+                displayResults(results);
+            } catch (error) {
+                displayError(error.message);
+            }
+        });
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            displayResults([]);
+        });
+
+        // 鍵盤支援
+        document.getElementById('draw-btn').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.target.click();
+            }
+        });
+
+        document.getElementById('clear-btn').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.target.click();
+            }
+        });
+    </script>
+</body>
+</html>
